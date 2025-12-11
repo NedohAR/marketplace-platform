@@ -1,0 +1,339 @@
+'use client'
+
+import { useParams } from 'next/navigation'
+import PageLayout from '@/components/layout/PageLayout'
+import ImageGallery from '@/components/forms/ImageGallery'
+import Modal from '@/components/ui/Modal'
+import RelatedAds from '@/components/ads/RelatedAds'
+import CompactAdCard from '@/components/ads/CompactAdCard'
+import { useAdStore } from '@/store/useAdStore'
+import { useAuthStore } from '@/store/useAuthStore'
+import { useToastStore } from '@/store/useToastStore'
+import { useMounted } from '@/hooks/useMounted'
+import { Ad, AdPageParams } from '@/types'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import {
+  FaEye,
+  FaPhone,
+  FaEnvelope,
+  FaUser,
+  FaEdit,
+  FaTrash,
+  FaShare,
+  FaLink,
+} from 'react-icons/fa'
+import { useState, useEffect } from 'react'
+import { formatPrice, formatDate } from '@/utils/format'
+
+export default function AdPage() {
+  const params = useParams() as AdPageParams
+  const router = useRouter()
+  const id = params.id
+  const {
+    getAdById,
+    deleteAd,
+    updateAd,
+    addToViewHistory,
+    getRelatedAds,
+    getSellerAds,
+    trackContact,
+  } = useAdStore()
+  const { user, isAuthenticated, addActivity } = useAuthStore()
+  const { success, error } = useToastStore()
+
+  const handleShare = async () => {
+    const url = window.location.href
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: ad?.title,
+          text: ad?.description,
+          url: url,
+        })
+        success('Shared successfully!')
+      } catch (err) {}
+    } else {
+      await navigator.clipboard.writeText(url)
+      success('Link copied to clipboard!')
+    }
+  }
+
+  const handleCopyLink = async () => {
+    const url = window.location.href
+    try {
+      await navigator.clipboard.writeText(url)
+      success('Link copied to clipboard!')
+    } catch (err) {
+      error('Failed to copy link')
+    }
+  }
+  const ad = getAdById(id)
+  const mounted = useMounted()
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [relatedAds, setRelatedAds] = useState<Ad[]>([])
+  const [sellerAds, setSellerAds] = useState<Ad[]>([])
+  const [viewsIncremented, setViewsIncremented] = useState(false)
+
+  const isOwner = isAuthenticated && user && ad && ad.userId === user.id
+
+  useEffect(() => {
+    if (ad && mounted && !viewsIncremented) {
+      const currentViews = ad.views || 0
+      updateAd(ad.id, { views: currentViews + 1 })
+      setViewsIncremented(true)
+      addToViewHistory(ad.id)
+      setRelatedAds(getRelatedAds(ad.id))
+      setSellerAds(getSellerAds(ad.userId, ad.id, 4))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted, ad?.id, viewsIncremented])
+
+  useEffect(() => {
+    setViewsIncremented(false)
+    setRelatedAds([])
+    setSellerAds([])
+  }, [id])
+
+  const handleDelete = () => {
+    if (!ad || !user) return
+    deleteAd(ad.id)
+    addActivity({
+      userId: user.id,
+      type: 'ad_archived',
+      description: `Deleted ad: ${ad.title}`,
+      adId: ad.id,
+    })
+    success('Ad successfully deleted')
+    router.push('/profile?tab=ads')
+  }
+
+  if (!ad) {
+    return (
+      <PageLayout>
+        <div className="text-center py-12">
+          <p className="text-gray-600 text-lg mb-4">Ad not found</p>
+          <Link
+            href="/"
+            className="inline-block text-orange-500 hover:text-orange-600"
+          >
+            Return to Homepage
+          </Link>
+        </div>
+      </PageLayout>
+    )
+  }
+
+  return (
+    <PageLayout>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6 animate-slide-up">
+            <div className="flex items-start justify-between mb-4">
+              <h1 className="text-3xl font-bold text-gray-800 flex-1">
+                {ad.title}
+              </h1>
+              {mounted && isOwner && (
+                <div className="flex gap-2 ml-4" suppressHydrationWarning>
+                  <Link
+                    href={`/edit-ad/${ad.id}`}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+                  >
+                    <FaEdit />
+                    Edit
+                  </Link>
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2"
+                  >
+                    <FaTrash />
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
+            <ImageGallery
+              images={
+                ad.images && ad.images.length > 0 ? ad.images : [ad.image]
+              }
+              title={ad.title}
+            />
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                Description
+              </h2>
+              <p className="text-gray-700 leading-relaxed">{ad.description}</p>
+            </div>
+          </div>
+
+          <Modal
+            isOpen={showDeleteConfirm}
+            onClose={() => setShowDeleteConfirm(false)}
+            title="Confirm Deletion"
+            size="sm"
+          >
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this ad? This action cannot be
+              undone.
+            </p>
+            <div className="flex gap-4 justify-end">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </Modal>
+
+          {relatedAds.length > 0 && <RelatedAds ads={relatedAds} />}
+
+          {sellerAds.length > 0 && (
+            <div className="mt-8">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                More from this seller
+              </h2>
+              <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                {sellerAds.map((ad) => (
+                  <div key={ad.id} className="flex-shrink-0 w-56">
+                    <CompactAdCard ad={ad} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="lg:col-span-1">
+          <div className="bg-white rounded-lg shadow-md p-6 sticky top-24">
+            <div className="mb-6">
+              <p
+                className="text-4xl font-bold text-orange-500 mb-4"
+                suppressHydrationWarning
+              >
+                {mounted
+                  ? formatPrice(ad.price)
+                  : `${ad.price.toLocaleString('en-US')} $`}
+              </p>
+              <div className="space-y-3 text-sm text-gray-600">
+                <div className="flex justify-between">
+                  <span>Location:</span>
+                  <span className="font-semibold">{ad.location}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Published:</span>
+                  <span className="font-semibold" suppressHydrationWarning>
+                    {mounted ? formatDate(ad.date, { year: true }) : ad.date}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Views:</span>
+                  <span className="font-semibold flex items-center gap-1">
+                    <FaEye className="text-gray-400" />
+                    {ad.views}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t pt-6 mb-6">
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={handleShare}
+                  className="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm"
+                >
+                  <FaShare />
+                  Share
+                </button>
+                <button
+                  onClick={handleCopyLink}
+                  className="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm"
+                >
+                  <FaLink />
+                  Copy Link
+                </button>
+              </div>
+            </div>
+
+            <div className="border-t pt-6">
+              <h3 className="font-semibold text-gray-800 mb-3">
+                Seller Contact
+              </h3>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white">
+                  <FaUser className="text-xl" />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-800">{ad.userName}</p>
+                  <p className="text-sm text-gray-600">
+                    On Marketplace since 2023
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (ad) {
+                    trackContact(ad.id, 'phone')
+                    success('Phone number: +1234567890')
+                  }
+                }}
+                className="w-full py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-semibold flex items-center justify-center gap-2"
+              >
+                <FaPhone />
+                Show Phone
+              </button>
+              <button
+                onClick={() => {
+                  if (ad && user) {
+                    trackContact(ad.id, 'message')
+                    const message = {
+                      id:
+                        Date.now().toString() +
+                        Math.random().toString(36).slice(2, 11),
+                      fromUserId: user.id,
+                      fromUserName: user.name,
+                      toUserId: ad.userId,
+                      adId: ad.id,
+                      adTitle: ad.title,
+                      content: `Hello! I'm interested in your ad "${ad.title}". Could you provide more details?`,
+                      date: new Date().toISOString(),
+                      read: false,
+                    }
+                    if (typeof window !== 'undefined') {
+                      try {
+                        const stored = localStorage.getItem(
+                          `messages-${ad.userId}`
+                        )
+                        const messages = stored ? JSON.parse(stored) : []
+                        messages.unshift(message)
+                        localStorage.setItem(
+                          `messages-${ad.userId}`,
+                          JSON.stringify(messages)
+                        )
+                        success('Message sent successfully!')
+                      } catch (e) {
+                        error('Failed to send message')
+                      }
+                    }
+                  } else if (!user) {
+                    router.push('/login')
+                  }
+                }}
+                className="w-full mt-2 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+              >
+                <FaEnvelope />
+                Send Message
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </PageLayout>
+  )
+}
