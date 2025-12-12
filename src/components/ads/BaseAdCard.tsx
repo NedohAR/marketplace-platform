@@ -37,7 +37,11 @@ function BaseAdCard({
   const isDefault = variant === 'default'
 
   const imageSizes = {
-    default: { width: 'w-32', height: 'h-32', sizes: '128px' },
+    default: {
+      width: 'w-full sm:w-32',
+      height: 'h-48 sm:h-32',
+      sizes: '(max-width: 640px) 100vw, 128px',
+    },
     compact: {
       width: 'w-full',
       height: 'h-40',
@@ -94,7 +98,7 @@ function BaseAdCard({
 
       <div
         className={`relative ${imageConfig.width} ${imageConfig.height} ${
-          isDefault ? 'flex-shrink-0' : 'w-full'
+          isDefault ? 'sm:flex-shrink-0' : 'w-full'
         } ${isDefault ? 'rounded-lg' : ''} overflow-hidden bg-gray-100`}
       >
         <Image
@@ -126,15 +130,25 @@ function BaseAdCard({
             {ad.title}
           </h3>
 
-          {showBadges && (ad.condition || ad.dealType) && (
-            <div className="mb-2">
-              <AdBadges
-                condition={ad.condition}
-                dealType={ad.dealType}
-                size={isCompact || isPromoted ? 'sm' : 'sm'}
-              />
-            </div>
-          )}
+          {showBadges &&
+            ((ad.condition && ad.condition !== 'new') ||
+              (ad.dealType && ad.dealType !== 'exchange')) && (
+              <div className="mb-2">
+                <AdBadges
+                  condition={
+                    ad.condition && ad.condition !== 'new'
+                      ? ad.condition
+                      : undefined
+                  }
+                  dealType={
+                    ad.dealType && ad.dealType !== 'exchange'
+                      ? ad.dealType
+                      : undefined
+                  }
+                  size={isCompact || isPromoted ? 'sm' : 'sm'}
+                />
+              </div>
+            )}
 
           <p
             className={`${

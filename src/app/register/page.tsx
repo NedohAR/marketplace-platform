@@ -2,15 +2,14 @@
 
 import AuthLayout from '@/components/layout/AuthLayout'
 import FormInput from '@/components/forms/FormInput'
-import { useAuthStore } from '@/store/useAuthStore'
 import { RegisterFormData } from '@/types'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { signIn } from 'next-auth/react'
 import Link from 'next/link'
 
 export default function RegisterPage() {
   const router = useRouter()
-  const register = useAuthStore((state) => state.register)
   const [formData, setFormData] = useState<RegisterFormData>({
     name: '',
     email: '',
@@ -37,15 +36,37 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     try {
-      const success = await register(
-        formData.email,
-        formData.password,
-        formData.name
-      )
-      if (success) {
+      // Создаем пользователя через API
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          name: formData.name,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || 'Registration failed')
+        return
+      }
+
+      // Автоматически логиним пользователя после регистрации
+      const result = await signIn('credentials', {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+      })
+
+      if (result?.error) {
+        setError('Registration successful, but login failed. Please sign in.')
+        router.push('/login')
+      } else if (result?.ok) {
         router.push('/profile')
-      } else {
-        setError('Registration error')
+        router.refresh()
       }
     } catch (err) {
       setError('An error occurred during registration')

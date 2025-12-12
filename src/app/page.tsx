@@ -11,6 +11,7 @@ import { useMounted } from '@/hooks/useMounted'
 import { useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Ad } from '@/types'
+import { useSession } from 'next-auth/react'
 
 export default function Home() {
   const {
@@ -21,15 +22,20 @@ export default function Home() {
     sortBy,
     getFilteredAndSortedAds,
     getRecentViews,
+    loadViewHistoryForUser,
   } = useAdStore()
   const mounted = useMounted()
+  const { data: session } = useSession()
   const [recentViews, setRecentViews] = useState<Ad[]>([])
 
   useEffect(() => {
-    if (mounted) {
-      setRecentViews(getRecentViews(5))
+    if (mounted && session?.user?.id) {
+      loadViewHistoryForUser(session.user.id)
+      setRecentViews(getRecentViews(5, session.user.id))
+    } else if (mounted) {
+      setRecentViews([])
     }
-  }, [mounted, getRecentViews])
+  }, [mounted, session?.user?.id, getRecentViews, loadViewHistoryForUser])
 
   const promotedAds = useMemo(() => {
     if (!mounted) return []
@@ -64,11 +70,11 @@ export default function Home() {
 
   return (
     <PageLayout showBackButton={false}>
-      <section className="mb-12">
-        <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">
+      <section className="mb-8 sm:mb-12 mt-4 sm:mt-0">
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4 sm:mb-6 text-center px-2">
           Popular Categories
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4">
           {categories.map((category) => (
             <CategoryCard key={category.id} category={category} />
           ))}
@@ -76,12 +82,12 @@ export default function Home() {
       </section>
 
       {!searchQuery && (
-        <section className="mb-12">
-          <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">
+        <section className="mb-8 sm:mb-12">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4 sm:mb-6 text-center px-2">
             Promoted Ads
           </h2>
           {mounted && promotedAds.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4">
               {promotedAds.map((ad) => (
                 <PromotedAdCard key={ad.id} ad={ad} />
               ))}
@@ -113,10 +119,15 @@ export default function Home() {
 
       {searchQuery && searchQuery.trim() && (
         <section>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-bold text-gray-800">Search Results</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">
+              Search Results
+            </h2>
             {mounted && (
-              <span className="text-gray-600" suppressHydrationWarning>
+              <span
+                className="text-gray-600 text-sm sm:text-base"
+                suppressHydrationWarning
+              >
                 Found: {filteredAds.length}
               </span>
             )}

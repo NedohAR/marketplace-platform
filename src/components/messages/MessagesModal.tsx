@@ -17,13 +17,6 @@ export default function MessagesModal({ isOpen, onClose }: MessagesModalProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [mounted, setMounted] = useState(false)
 
-  useEffect(() => {
-    setMounted(true)
-    if (user) {
-      loadMessages()
-    }
-  }, [user])
-
   const loadMessages = () => {
     if (!user || typeof window === 'undefined') return
     try {
@@ -38,6 +31,14 @@ export default function MessagesModal({ isOpen, onClose }: MessagesModalProps) {
       setMessages([])
     }
   }
+
+  useEffect(() => {
+    setMounted(true)
+    if (user) {
+      loadMessages()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
 
   const markAsRead = (messageId: string) => {
     if (!user || typeof window === 'undefined') return

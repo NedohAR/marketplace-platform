@@ -23,16 +23,21 @@ export default function AllAdsPage() {
 
   return (
     <PageLayout>
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-800 mb-2">All Ads</h1>
+      <div className="mb-4 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-2">
+          All Ads
+        </h1>
         {mounted && (
-          <p className="text-gray-600" suppressHydrationWarning>
+          <p
+            className="text-sm sm:text-base text-gray-600"
+            suppressHydrationWarning
+          >
             Found: {filteredAds.length}
           </p>
         )}
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <FiltersSidebar />
 
         <div>

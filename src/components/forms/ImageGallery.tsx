@@ -19,16 +19,16 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
 
-  if (!images || images.length === 0) return null
-
-  const mainImage = images[currentIndex]
-  const hasMultipleImages = images.length > 1
+  const mainImage = images?.[currentIndex]
+  const hasMultipleImages = (images?.length || 0) > 1
 
   const nextImage = () => {
+    if (!images || images.length === 0) return
     setCurrentIndex((prev) => (prev + 1) % images.length)
   }
 
   const prevImage = () => {
+    if (!images || images.length === 0) return
     setCurrentIndex((prev) => (prev - 1 + images.length) % images.length)
   }
 
@@ -55,6 +55,8 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isLightboxOpen, hasMultipleImages, images.length])
+
+  if (!images || images.length === 0) return null
 
   return (
     <>

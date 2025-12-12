@@ -33,10 +33,10 @@ export default function PageLayout({
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main
-        className={`container mx-auto px-4 py-8 pt-24 ${maxWidthClasses[maxWidth]} ${className}`}
+        className={`container mx-auto px-2 sm:px-4 py-4 sm:py-8 pt-20 sm:pt-24 ${maxWidthClasses[maxWidth]} ${className}`}
       >
         {showBackButton && (
-          <div className="mb-6">
+          <div className="mb-4 sm:mb-6">
             <BackButton onBack={onBack} />
           </div>
         )}

@@ -32,7 +32,7 @@ interface AdContact {
   contactedAt: string
 }
 
-interface SellerStats {
+export interface SellerStats {
   adId: string
   views: number
   phoneClicks: number
@@ -67,8 +67,9 @@ interface AdStore {
   addToSearchHistory: (query: string) => void
   clearSearchHistory: () => void
   getSearchSuggestions: (query: string) => string[]
-  addToViewHistory: (adId: string) => void
-  getRecentViews: (limit?: number) => Ad[]
+  addToViewHistory: (adId: string, userId?: string) => void
+  getRecentViews: (limit?: number, userId?: string) => Ad[]
+  loadViewHistoryForUser: (userId?: string) => void
   getRelatedAds: (adId: string, limit?: number) => Ad[]
   getSellerAds: (userId: string, excludeAdId?: string, limit?: number) => Ad[]
   trackContact: (adId: string, contactType: 'phone' | 'message') => void
@@ -317,10 +318,11 @@ const saveSearchHistoryToStorage = (history: string[]) => {
   } catch (e) {}
 }
 
-const loadViewHistoryFromStorage = (): ViewHistoryItem[] => {
+const loadViewHistoryFromStorage = (userId?: string): ViewHistoryItem[] => {
   if (typeof window === 'undefined') return []
+  if (!userId) return []
   try {
-    const stored = localStorage.getItem('view-history-storage')
+    const stored = localStorage.getItem(`view-history-storage-${userId}`)
     if (stored) {
       return JSON.parse(stored)
     }
@@ -328,10 +330,17 @@ const loadViewHistoryFromStorage = (): ViewHistoryItem[] => {
   return []
 }
 
-const saveViewHistoryToStorage = (history: ViewHistoryItem[]) => {
+const saveViewHistoryToStorage = (
+  history: ViewHistoryItem[],
+  userId?: string
+) => {
   if (typeof window === 'undefined') return
+  if (!userId) return
   try {
-    localStorage.setItem('view-history-storage', JSON.stringify(history))
+    localStorage.setItem(
+      `view-history-storage-${userId}`,
+      JSON.stringify(history)
+    )
   } catch (e) {}
 }
 
@@ -362,7 +371,7 @@ export const useAdStore = create<AdStore>((set, get) => ({
   filters: loadFiltersFromStorage(),
   favorites: loadFavoritesFromStorage(),
   searchHistory: loadSearchHistoryFromStorage(),
-  viewHistory: loadViewHistoryFromStorage(),
+  viewHistory: [],
   sellerStats: loadSellerStatsFromStorage(),
   setSelectedCategory: (category) => set({ selectedCategory: category }),
   setSearchQuery: (query) => {
@@ -501,7 +510,7 @@ export const useAdStore = create<AdStore>((set, get) => ({
   addAd: (adData) => {
     const newAd: Ad = {
       ...adData,
-      id: Date.now().toString(),
+      id: Date.now().toString() + Math.random().toString(36).slice(2, 11),
       date: new Date().toISOString(),
       views: 0,
       status: 'active',
@@ -572,19 +581,30 @@ export const useAdStore = create<AdStore>((set, get) => ({
 
     return Array.from(suggestions).slice(0, 5)
   },
-  addToViewHistory: (adId: string) => {
+  loadViewHistoryForUser: (userId?: string) => {
+    if (!userId) {
+      set({ viewHistory: [] })
+      return
+    }
+    const history = loadViewHistoryFromStorage(userId)
+    set({ viewHistory: history })
+  },
+  addToViewHistory: (adId: string, userId?: string) => {
+    if (!userId) return
     const history = get().viewHistory
     const newHistory = [
       { adId, viewedAt: new Date().toISOString() },
       ...history.filter((item) => item.adId !== adId),
     ].slice(0, 20)
     set({ viewHistory: newHistory })
-    saveViewHistoryToStorage(newHistory)
+    saveViewHistoryToStorage(newHistory, userId)
   },
-  getRecentViews: (limit = 5) => {
-    const history = get().viewHistory.slice(0, limit)
+  getRecentViews: (limit = 5, userId?: string) => {
+    if (!userId) return []
+    const history = loadViewHistoryFromStorage(userId)
+    const historySlice = history.slice(0, limit)
     const { ads } = get()
-    return history
+    return historySlice
       .map((item) => ads.find((ad) => ad.id === item.adId))
       .filter((ad): ad is Ad => ad !== undefined)
   },

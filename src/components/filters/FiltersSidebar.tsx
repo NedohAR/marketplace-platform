@@ -44,28 +44,30 @@ export default function FiltersSidebar() {
       filters.customDate !== null)
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-gray-800">Filters & Sort</h2>
+    <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-800">
+          Filters & Sort
+        </h2>
         {hasActiveFilters && (
           <button
             onClick={clearFilters}
-            className="text-sm text-gray-600 hover:text-orange-500 flex items-center gap-1"
+            className="text-xs sm:text-sm text-gray-600 hover:text-orange-500 flex items-center gap-1"
             suppressHydrationWarning
           >
             <FaTimes />
-            Reset
+            <span className="hidden xs:inline">Reset</span>
           </button>
         )}
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <QuickFilters
           dateFilter={filters.dateFilter}
           onFilterChange={(filter) => setFilters({ dateFilter: filter })}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <PriceFilter
             minPrice={filters.minPrice}
             maxPrice={filters.maxPrice}

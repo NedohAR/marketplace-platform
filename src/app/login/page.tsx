@@ -2,15 +2,14 @@
 
 import AuthLayout from '@/components/layout/AuthLayout'
 import FormInput from '@/components/forms/FormInput'
-import { useAuthStore } from '@/store/useAuthStore'
 import { LoginFormData } from '@/types'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { signIn } from 'next-auth/react'
 import Link from 'next/link'
 
 export default function LoginPage() {
   const router = useRouter()
-  const login = useAuthStore((state) => state.login)
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: '',
@@ -24,11 +23,17 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      const success = await login(formData.email, formData.password)
-      if (success) {
-        router.push('/profile')
-      } else {
+      const result = await signIn('credentials', {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+      })
+
+      if (result?.error) {
         setError('Invalid email or password')
+      } else if (result?.ok) {
+        router.push('/profile')
+        router.refresh()
       }
     } catch (err) {
       setError('An error occurred during sign in')

@@ -102,11 +102,13 @@ export default function PostAdPage() {
 
   return (
     <PageLayout maxWidth="3xl">
-      <h1 className="text-4xl font-bold text-gray-800 mb-8">Post Ad</h1>
+      <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-4 sm:mb-6 lg:mb-8 px-2">
+        Post Ad
+      </h1>
 
       <form
         onSubmit={handleSubmit}
-        className="bg-white rounded-lg shadow-md p-6 space-y-6"
+        className="bg-white rounded-lg shadow-md p-4 sm:p-6 space-y-4 sm:space-y-6"
       >
         <FormInput
           type="text"
@@ -128,7 +130,7 @@ export default function PostAdPage() {
           placeholder="Describe your item in detail..."
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           <FormInput
             type="number"
             label="Price ($) *"
@@ -153,7 +155,7 @@ export default function PostAdPage() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           <FormSelect
             label="Condition"
             value={formData.condition || ''}

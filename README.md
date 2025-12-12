@@ -1,61 +1,19 @@
-# OLX Web
+# Marketplace Web Application
 
-Веб-приложение на Next.js с TypeScript, Zustand и Tailwind CSS.
+##  Tech Stack
 
-## Технологии
+- **Next.js** 
+- **TypeScript** 
+- **NextAuth.js** - Authentication
+- **Zustand** - State management
+- **Tailwind CSS** - Styling
+- **bcryptjs** - Password hashing
 
-- **Next.js 15** - React фреймворк для продакшена
-- **TypeScript** - типизированный JavaScript
-- **Zustand** - легковесное управление состоянием
-- **Tailwind CSS** - utility-first CSS фреймворк
+##  Features
 
-## Установка
-
-```bash
-npm install
-```
-
-## Запуск
-
-Запуск в режиме разработки:
-
-```bash
-npm run dev
-```
-
-Откройте [http://localhost:3000](http://localhost:3000) в браузере.
-
-## Сборка
-
-Создание production сборки:
-
-```bash
-npm run build
-```
-
-Запуск production сервера:
-
-```bash
-npm start
-```
-
-## Структура проекта
-
-```
-olxweb/
-├── src/
-│   ├── app/              # Next.js App Router
-│   │   ├── layout.tsx    # Корневой layout
-│   │   ├── page.tsx      # Главная страница
-│   │   └── globals.css   # Глобальные стили с Tailwind
-│   └── store/            # Zustand stores
-│       └── useStore.ts   # Пример store
-├── public/               # Статические файлы
-├── next.config.ts        # Конфигурация Next.js
-├── tailwind.config.ts    # Конфигурация Tailwind CSS
-└── tsconfig.json         # Конфигурация TypeScript
-```
-
-## Использование Zustand
-
-Пример использования store находится в `src/store/useStore.ts`. Вы можете создать дополнительные stores для различных частей приложения.
+- **Authentication** - Secure registration/login with JWT sessions
+- **Ads Management** - Create, edit, delete, archive ads with multiple images
+- **Search & Filters** - Full-text search with advanced filtering (price, location, category, condition, date)
+- **User Features** - Favorites, per-user view history, messaging system
+- **Seller Dashboard** - Ad statistics, activity history, profile management
+- **Responsive Design** - Mobile-first, works on all devices

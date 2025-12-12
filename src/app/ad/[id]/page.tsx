@@ -10,6 +10,7 @@ import { useAdStore } from '@/store/useAdStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useToastStore } from '@/store/useToastStore'
 import { useMounted } from '@/hooks/useMounted'
+import { useSession } from 'next-auth/react'
 import { Ad, AdPageParams } from '@/types'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -41,6 +42,7 @@ export default function AdPage() {
   } = useAdStore()
   const { user, isAuthenticated, addActivity } = useAuthStore()
   const { success, error } = useToastStore()
+  const { data: session } = useSession()
 
   const handleShare = async () => {
     const url = window.location.href
@@ -82,12 +84,15 @@ export default function AdPage() {
       const currentViews = ad.views || 0
       updateAd(ad.id, { views: currentViews + 1 })
       setViewsIncremented(true)
-      addToViewHistory(ad.id)
+      const userId = session?.user?.id || user?.id
+      if (userId) {
+        addToViewHistory(ad.id, userId)
+      }
       setRelatedAds(getRelatedAds(ad.id))
       setSellerAds(getSellerAds(ad.userId, ad.id, 4))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mounted, ad?.id, viewsIncremented])
+  }, [mounted, ad?.id, viewsIncremented, session?.user?.id, user?.id])
 
   useEffect(() => {
     setViewsIncremented(false)
@@ -126,28 +131,28 @@ export default function AdPage() {
 
   return (
     <PageLayout>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6 animate-slide-up">
-            <div className="flex items-start justify-between mb-4">
-              <h1 className="text-3xl font-bold text-gray-800 flex-1">
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-4 sm:mb-6 animate-slide-up">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-4">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 flex-1">
                 {ad.title}
               </h1>
               {mounted && isOwner && (
-                <div className="flex gap-2 ml-4" suppressHydrationWarning>
+                <div className="flex gap-2 flex-wrap" suppressHydrationWarning>
                   <Link
                     href={`/edit-ad/${ad.id}`}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+                    className="px-3 sm:px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2 text-sm sm:text-base"
                   >
                     <FaEdit />
-                    Edit
+                    <span className="hidden xs:inline">Edit</span>
                   </Link>
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2"
+                    className="px-3 sm:px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2 text-sm sm:text-base"
                   >
                     <FaTrash />
-                    Delete
+                    <span className="hidden xs:inline">Delete</span>
                   </button>
                 </div>
               )}
@@ -211,10 +216,10 @@ export default function AdPage() {
         </div>
 
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-md p-6 sticky top-24">
-            <div className="mb-6">
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 sticky top-20 sm:top-24">
+            <div className="mb-4 sm:mb-6">
               <p
-                className="text-4xl font-bold text-orange-500 mb-4"
+                className="text-3xl sm:text-4xl font-bold text-orange-500 mb-3 sm:mb-4"
                 suppressHydrationWarning
               >
                 {mounted
@@ -242,36 +247,38 @@ export default function AdPage() {
               </div>
             </div>
 
-            <div className="border-t pt-6 mb-6">
-              <div className="flex gap-2 mb-4">
+            <div className="border-t pt-4 sm:pt-6 mb-4 sm:mb-6">
+              <div className="flex gap-2 mb-3 sm:mb-4">
                 <button
                   onClick={handleShare}
-                  className="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm"
+                  className="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm"
                 >
                   <FaShare />
-                  Share
+                  <span className="hidden xs:inline">Share</span>
                 </button>
                 <button
                   onClick={handleCopyLink}
-                  className="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm"
+                  className="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm"
                 >
                   <FaLink />
-                  Copy Link
+                  <span className="hidden xs:inline">Copy Link</span>
                 </button>
               </div>
             </div>
 
-            <div className="border-t pt-6">
-              <h3 className="font-semibold text-gray-800 mb-3">
+            <div className="border-t pt-4 sm:pt-6">
+              <h3 className="font-semibold text-gray-800 mb-3 text-sm sm:text-base">
                 Seller Contact
               </h3>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white">
-                  <FaUser className="text-xl" />
+              <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-500 rounded-full flex items-center justify-center text-white flex-shrink-0">
+                  <FaUser className="text-lg sm:text-xl" />
                 </div>
-                <div>
-                  <p className="font-semibold text-gray-800">{ad.userName}</p>
-                  <p className="text-sm text-gray-600">
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-800 text-sm sm:text-base truncate">
+                    {ad.userName}
+                  </p>
+                  <p className="text-xs sm:text-sm text-gray-600">
                     On Marketplace since 2023
                   </p>
                 </div>
@@ -283,10 +290,11 @@ export default function AdPage() {
                     success('Phone number: +1234567890')
                   }
                 }}
-                className="w-full py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-semibold flex items-center justify-center gap-2"
+                className="w-full py-2.5 sm:py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-semibold flex items-center justify-center gap-2 text-sm sm:text-base"
               >
                 <FaPhone />
-                Show Phone
+                <span className="hidden xs:inline">Show Phone</span>
+                <span className="xs:hidden">Phone</span>
               </button>
               <button
                 onClick={() => {
@@ -325,10 +333,11 @@ export default function AdPage() {
                     router.push('/login')
                   }
                 }}
-                className="w-full mt-2 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                className="w-full mt-2 py-2.5 sm:py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
               >
                 <FaEnvelope />
-                Send Message
+                <span className="hidden xs:inline">Send Message</span>
+                <span className="xs:hidden">Message</span>
               </button>
             </div>
           </div>

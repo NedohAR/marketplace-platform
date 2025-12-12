@@ -76,12 +76,12 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      <main className="container mx-auto px-4 py-8 pt-24">
-        <div className="mb-6">
+      <main className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 pt-20 sm:pt-24">
+        <div className="mb-4 sm:mb-6">
           <BackButton />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
           <div className="lg:col-span-1">
             <ProfileSidebar
               user={user}
@@ -92,7 +92,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="lg:col-span-3">
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
               {activeTab === 'profile' && (
                 <ProfileInfo
                   user={user}
