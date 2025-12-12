@@ -1,4 +1,3 @@
-// Конфигурация NextAuth для использования в route и других местах
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { verifyPassword } from '@/lib/users-storage'
 import type { NextAuthConfig } from 'next-auth'
@@ -16,7 +15,6 @@ export const authConfig: NextAuthConfig = {
           return null
         }
 
-        // Проверяем пользователя и пароль
         const user = await verifyPassword(
           credentials.email as string,
           credentials.password as string
@@ -36,7 +34,7 @@ export const authConfig: NextAuthConfig = {
   ],
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 дней
+    maxAge: 30 * 24 * 60 * 60,
   },
   pages: {
     signIn: '/login',

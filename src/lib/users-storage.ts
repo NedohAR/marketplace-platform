@@ -1,58 +1,85 @@
-// Единое хранилище пользователей
-// В продакшене заменить на БД
-
 import bcrypt from 'bcryptjs'
-import { readFileSync, writeFileSync, existsSync } from 'fs'
-import { join } from 'path'
+import { prisma } from './prisma'
 
-interface StoredUser {
+export interface StoredUser {
   id: string
   email: string
   password: string // хешированный
   name: string
-  phone?: string
-  location?: string
+  phone?: string | null
+  location?: string | null
   createdAt: string
 }
 
-const STORAGE_FILE = join(process.cwd(), 'users-data.json')
-
-// Загрузка пользователей из файла
-function loadUsers(): StoredUser[] {
+export async function getUsers(): Promise<StoredUser[]> {
   try {
-    if (existsSync(STORAGE_FILE)) {
-      const data = readFileSync(STORAGE_FILE, 'utf-8')
-      return JSON.parse(data)
-    }
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        name: true,
+        phone: true,
+        createdAt: true,
+      },
+    })
+    return users.map(
+      (user: {
+        id: string
+        email: string
+        password: string
+        name: string | null
+        phone: string | null
+        createdAt: Date
+      }) => ({
+        id: user.id,
+        email: user.email,
+        password: user.password,
+        name: user.name || '',
+        phone: user.phone,
+        location: null,
+        createdAt: user.createdAt.toISOString(),
+      })
+    )
   } catch (e) {
     console.error('Error loading users:', e)
+    return []
   }
-  return []
 }
 
-// Сохранение пользователей в файл
-function saveUsers(users: StoredUser[]) {
+export async function getUserByEmail(
+  email: string
+): Promise<StoredUser | null> {
   try {
-    writeFileSync(STORAGE_FILE, JSON.stringify(users, null, 2), 'utf-8')
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        name: true,
+        phone: true,
+        createdAt: true,
+      },
+    })
+
+    if (!user) return null
+
+    return {
+      id: user.id,
+      email: user.email,
+      password: user.password,
+      name: user.name || '',
+      phone: user.phone,
+      location: null,
+      createdAt: user.createdAt.toISOString(),
+    }
   } catch (e) {
-    console.error('Error saving users:', e)
+    console.error('Error getting user by email:', e)
+    return null
   }
 }
 
-// Получить всех пользователей
-export function getUsers(): StoredUser[] {
-  return loadUsers()
-}
-
-// Получить пользователя по email
-export function getUserByEmail(email: string): StoredUser | null {
-  const users = loadUsers()
-  return (
-    users.find((u) => u.email.toLowerCase() === email.toLowerCase()) || null
-  )
-}
-
-// Создать пользователя
 export async function createUser(
   email: string,
   password: string,
@@ -60,42 +87,59 @@ export async function createUser(
   phone?: string,
   location?: string
 ): Promise<StoredUser> {
-  const users = loadUsers()
-
-  // Проверка существующего пользователя
-  const existingUser = users.find(
-    (u) => u.email.toLowerCase() === email.toLowerCase()
-  )
+  const existingUser = await prisma.user.findUnique({
+    where: { email: email.toLowerCase() },
+  })
 
   if (existingUser) {
     throw new Error('User already exists')
   }
 
-  // Хеширование пароля
   const hashedPassword = await bcrypt.hash(password, 10)
 
-  const newUser: StoredUser = {
-    id: Date.now().toString() + Math.random().toString(36).slice(2, 11),
-    email,
-    password: hashedPassword,
-    name,
-    phone,
-    location,
-    createdAt: new Date().toISOString(),
+  let username = email.toLowerCase().split('@')[0]
+  let usernameExists = await prisma.user.findUnique({
+    where: { username },
+  })
+
+  if (usernameExists) {
+    username = username + Math.random().toString(36).slice(2, 8)
   }
 
-  users.push(newUser)
-  saveUsers(users)
+  const newUser = await prisma.user.create({
+    data: {
+      email: email.toLowerCase(),
+      password: hashedPassword,
+      name,
+      phone,
+      username,
+    },
+    select: {
+      id: true,
+      email: true,
+      password: true,
+      name: true,
+      phone: true,
+      createdAt: true,
+    },
+  })
 
-  return newUser
+  return {
+    id: newUser.id,
+    email: newUser.email,
+    password: newUser.password,
+    name: newUser.name || '',
+    phone: newUser.phone,
+    location: location || null,
+    createdAt: newUser.createdAt.toISOString(),
+  }
 }
 
-// Проверить пароль
 export async function verifyPassword(
   email: string,
   password: string
 ): Promise<StoredUser | null> {
-  const user = getUserByEmail(email)
+  const user = await getUserByEmail(email)
   if (!user) {
     return null
   }

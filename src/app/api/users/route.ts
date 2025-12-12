@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getUserByEmail, createUser } from '@/lib/users-storage'
 
-// GET - получить пользователя по email
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const email = searchParams.get('email')
@@ -10,18 +9,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Email is required' }, { status: 400 })
   }
 
-  const user = getUserByEmail(email)
+  const user = await getUserByEmail(email)
 
   if (!user) {
     return NextResponse.json({ user: null })
   }
 
-  // Не возвращаем пароль
   const { password, ...userWithoutPassword } = user
   return NextResponse.json({ user: userWithoutPassword })
 }
 
-// POST - создать нового пользователя
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -36,7 +33,6 @@ export async function POST(request: NextRequest) {
 
     const newUser = await createUser(email, password, name, phone, location)
 
-    // Не возвращаем пароль
     const { password: _, ...userWithoutPassword } = newUser
     return NextResponse.json({ user: userWithoutPassword }, { status: 201 })
   } catch (error: any) {

@@ -131,17 +131,25 @@ function BaseAdCard({
           </h3>
 
           {showBadges &&
-            ((ad.condition && ad.condition !== 'new') ||
-              (ad.dealType && ad.dealType !== 'exchange')) && (
+            ((ad.condition &&
+              ad.condition !== 'new' &&
+              ad.condition !== 'used') ||
+              (ad.dealType &&
+                ad.dealType !== 'exchange' &&
+                ad.dealType !== 'buy')) && (
               <div className="mb-2">
                 <AdBadges
                   condition={
-                    ad.condition && ad.condition !== 'new'
+                    ad.condition &&
+                    ad.condition !== 'new' &&
+                    ad.condition !== 'used'
                       ? ad.condition
                       : undefined
                   }
                   dealType={
-                    ad.dealType && ad.dealType !== 'exchange'
+                    ad.dealType &&
+                    ad.dealType !== 'exchange' &&
+                    ad.dealType !== 'buy'
                       ? ad.dealType
                       : undefined
                   }

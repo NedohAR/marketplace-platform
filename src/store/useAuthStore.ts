@@ -25,7 +25,6 @@ interface AuthStore {
   updateSettings: (settings: Partial<UserSettings>) => void
   addActivity: (activity: Omit<Activity, 'id' | 'date'>) => void
   getActivities: () => Activity[]
-  // Новый метод для синхронизации с NextAuth
   syncWithNextAuth: (session: any) => void
 }
 
@@ -184,7 +183,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   logout: () => {
     set({ user: null, isAuthenticated: false })
     saveToStorage({ ...get(), user: null, isAuthenticated: false })
-    // Также выходим из NextAuth (импортируем динамически)
     if (typeof window !== 'undefined') {
       import('next-auth/react').then(({ signOut }) => {
         signOut({ callbackUrl: '/' })
@@ -199,7 +197,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       set({ user: updatedUser })
       saveToStorage({ ...get(), user: updatedUser })
 
-      // Обновляем данные пользователя в хранилище пользователей
       if (typeof window !== 'undefined') {
         const users = loadUsersFromStorage()
         const userIndex = users.findIndex((u) => u.id === user.id)
