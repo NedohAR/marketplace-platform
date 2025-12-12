@@ -5,11 +5,18 @@ import AdCard from '@/components/ads/AdCard'
 import FiltersSidebar from '@/components/filters/FiltersSidebar'
 import { useAdStore } from '@/store/useAdStore'
 import { useMounted } from '@/hooks/useMounted'
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 
 export default function AllAdsPage() {
-  const { ads, filters, sortBy, getFilteredAndSortedAds } = useAdStore()
+  const { ads, filters, sortBy, getFilteredAndSortedAds, loadAds } =
+    useAdStore()
   const mounted = useMounted()
+
+  useEffect(() => {
+    if (mounted) {
+      loadAds()
+    }
+  }, [mounted, loadAds])
 
   const filteredAds = useMemo(() => {
     let result = ads.filter(

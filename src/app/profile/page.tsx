@@ -111,32 +111,47 @@ export default function ProfilePage() {
 }
 
 function MyAdsTab({ userId }: { userId: string }) {
-  const { ads, archiveAd, deleteAd, getSellerStats } = useAdStore()
+  const { ads, archiveAd, deleteAd, getSellerStats, loadAds } = useAdStore()
+  const mounted = useMounted()
+
+  useEffect(() => {
+    if (mounted) {
+      loadAds()
+    }
+  }, [mounted, loadAds])
   const { user, addActivity } = useAuthStore()
   const userAds = ads.filter((ad) => ad.userId === userId)
   const stats = getSellerStats(userId)
 
-  const handleArchive = (adId: string, adTitle: string) => {
-    archiveAd(adId)
-    if (user) {
-      addActivity({
-        userId: user.id,
-        type: 'ad_archived',
-        description: `Archived ad: ${adTitle}`,
-        adId,
-      })
+  const handleArchive = async (adId: string, adTitle: string) => {
+    try {
+      await archiveAd(adId)
+      if (user) {
+        addActivity({
+          userId: user.id,
+          type: 'ad_archived',
+          description: `Archived ad: ${adTitle}`,
+          adId,
+        })
+      }
+    } catch (error) {
+      console.error('Error archiving ad:', error)
     }
   }
 
-  const handleDelete = (adId: string, adTitle: string) => {
-    deleteAd(adId)
-    if (user) {
-      addActivity({
-        userId: user.id,
-        type: 'ad_archived',
-        description: `Deleted ad: ${adTitle}`,
-        adId,
-      })
+  const handleDelete = async (adId: string, adTitle: string) => {
+    try {
+      await deleteAd(adId)
+      if (user) {
+        addActivity({
+          userId: user.id,
+          type: 'ad_archived',
+          description: `Deleted ad: ${adTitle}`,
+          adId,
+        })
+      }
+    } catch (error) {
+      console.error('Error deleting ad:', error)
     }
   }
 

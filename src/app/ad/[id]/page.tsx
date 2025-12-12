@@ -82,7 +82,7 @@ export default function AdPage() {
   useEffect(() => {
     if (ad && mounted && !viewsIncremented) {
       const currentViews = ad.views || 0
-      updateAd(ad.id, { views: currentViews + 1 })
+      updateAd(ad.id, { views: currentViews + 1 }).catch(console.error)
       setViewsIncremented(true)
       const userId = session?.user?.id || user?.id
       if (userId) {
@@ -100,17 +100,23 @@ export default function AdPage() {
     setSellerAds([])
   }, [id])
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!ad || !user) return
-    deleteAd(ad.id)
-    addActivity({
-      userId: user.id,
-      type: 'ad_archived',
-      description: `Deleted ad: ${ad.title}`,
-      adId: ad.id,
-    })
-    success('Ad successfully deleted')
-    router.push('/profile?tab=ads')
+    try {
+      await deleteAd(ad.id)
+      addActivity({
+        userId: user.id,
+        type: 'ad_archived',
+        description: `Deleted ad: ${ad.title}`,
+        adId: ad.id,
+      })
+      success('Ad successfully deleted')
+      router.push('/profile?tab=ads')
+    } catch (error) {
+      console.error('Error deleting ad:', error)
+      success('Ad deleted (local)')
+      router.push('/profile?tab=ads')
+    }
   }
 
   if (!ad) {

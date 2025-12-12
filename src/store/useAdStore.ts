@@ -60,10 +60,11 @@ interface AdStore {
   getAdsByCategory: (categorySlug: string) => Ad[]
   getFilteredAndSortedAds: (ads: Ad[]) => Ad[]
   getAdById: (id: string) => Ad | undefined
-  addAd: (ad: Omit<Ad, 'id' | 'date' | 'views' | 'status'>) => void
-  updateAd: (id: string, updates: Partial<Ad>) => void
-  archiveAd: (id: string) => void
-  deleteAd: (id: string) => void
+  loadAds: () => Promise<void>
+  addAd: (ad: Omit<Ad, 'id' | 'date' | 'views' | 'status'>) => Promise<Ad>
+  updateAd: (id: string, updates: Partial<Ad>) => Promise<void>
+  archiveAd: (id: string) => Promise<void>
+  deleteAd: (id: string) => Promise<boolean>
   addToSearchHistory: (query: string) => void
   clearSearchHistory: () => void
   getSearchSuggestions: (query: string) => string[]
@@ -363,7 +364,7 @@ const saveSellerStatsToStorage = (stats: Record<string, SellerStats>) => {
 }
 
 export const useAdStore = create<AdStore>((set, get) => ({
-  ads: loadAdsFromStorage(),
+  ads: [],
   categories: mockCategories,
   selectedCategory: null,
   searchQuery: '',
@@ -373,6 +374,21 @@ export const useAdStore = create<AdStore>((set, get) => ({
   searchHistory: loadSearchHistoryFromStorage(),
   viewHistory: [],
   sellerStats: loadSellerStatsFromStorage(),
+
+  loadAds: async () => {
+    try {
+      const response = await fetch('/api/ads')
+      if (response.ok) {
+        const data = await response.json()
+        set({ ads: data.ads || [] })
+      } else {
+        set({ ads: loadAdsFromStorage() })
+      }
+    } catch (e) {
+      console.error('Error loading ads:', e)
+      set({ ads: loadAdsFromStorage() })
+    }
+  },
   setSelectedCategory: (category) => set({ selectedCategory: category }),
   setSearchQuery: (query) => {
     set({ searchQuery: query })
@@ -507,36 +523,98 @@ export const useAdStore = create<AdStore>((set, get) => ({
   getAdById: (id) => {
     return get().ads.find((ad) => ad.id === id)
   },
-  addAd: (adData) => {
-    const newAd: Ad = {
-      ...adData,
-      id: Date.now().toString() + Math.random().toString(36).slice(2, 11),
-      date: new Date().toISOString(),
-      views: 0,
-      status: 'active',
+  addAd: async (adData) => {
+    try {
+      const response = await fetch('/api/ads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(adData),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const newAd = data.ad
+        const newAds = [newAd, ...get().ads]
+        set({ ads: newAds })
+        return newAd
+      } else {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to create ad')
+      }
+    } catch (e) {
+      console.error('Error adding ad:', e)
+      const defaultImage = '/placeholder-image.svg'
+      const newAd: Ad = {
+        ...adData,
+        id: Date.now().toString() + Math.random().toString(36).slice(2, 11),
+        date: new Date().toISOString(),
+        views: 0,
+        status: 'active',
+        image: adData.image || defaultImage,
+        images:
+          adData.images && adData.images.length > 0
+            ? adData.images
+            : adData.image
+            ? [adData.image]
+            : [defaultImage],
+      }
+      const newAds = [newAd, ...get().ads]
+      set({ ads: newAds })
+      saveAdsToStorage(newAds)
+      return newAd
     }
-    const newAds = [newAd, ...get().ads]
-    set({ ads: newAds })
-    saveAdsToStorage(newAds)
   },
-  updateAd: (id, updates) => {
-    const newAds = get().ads.map((ad) =>
-      ad.id === id ? { ...ad, ...updates } : ad
-    )
-    set({ ads: newAds })
-    saveAdsToStorage(newAds)
+  updateAd: async (id, updates) => {
+    try {
+      const response = await fetch('/api/ads', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...updates }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const updatedAd = data.ad
+        const newAds = get().ads.map((ad) => (ad.id === id ? updatedAd : ad))
+        set({ ads: newAds })
+        return updatedAd
+      } else {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to update ad')
+      }
+    } catch (e) {
+      console.error('Error updating ad:', e)
+      const newAds = get().ads.map((ad) =>
+        ad.id === id ? { ...ad, ...updates } : ad
+      )
+      set({ ads: newAds })
+      saveAdsToStorage(newAds)
+    }
   },
-  archiveAd: (id) => {
-    const newAds = get().ads.map((ad) =>
-      ad.id === id ? { ...ad, status: 'archived' as const } : ad
-    )
-    set({ ads: newAds })
-    saveAdsToStorage(newAds)
+  archiveAd: async (id) => {
+    return get().updateAd(id, { status: 'archived' })
   },
-  deleteAd: (id) => {
-    const newAds = get().ads.filter((ad) => ad.id !== id)
-    set({ ads: newAds })
-    saveAdsToStorage(newAds)
+  deleteAd: async (id) => {
+    try {
+      const response = await fetch(`/api/ads?id=${id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        const newAds = get().ads.filter((ad) => ad.id !== id)
+        set({ ads: newAds })
+        return true
+      } else {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete ad')
+      }
+    } catch (e) {
+      console.error('Error deleting ad:', e)
+      const newAds = get().ads.filter((ad) => ad.id !== id)
+      set({ ads: newAds })
+      saveAdsToStorage(newAds)
+      return false
+    }
   },
   addToSearchHistory: (query: string) => {
     const history = get().searchHistory

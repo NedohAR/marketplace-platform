@@ -36,12 +36,11 @@ export default function PostAdPage() {
     }
   }, [isAuthenticated, router])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user) return
 
-    const defaultImage =
-      'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400'
+    const defaultImage = '/placeholder-image.svg'
 
     const images =
       formData.images && formData.images.length > 0
@@ -51,29 +50,35 @@ export default function PostAdPage() {
         : [defaultImage]
     const mainImage = images[0] || defaultImage
 
-    addAd({
-      title: formData.title,
-      description: formData.description,
-      price: Number(formData.price),
-      category: formData.category,
-      location: formData.location,
-      image: mainImage,
-      images: images.length > 1 ? images : undefined,
-      userId: user.id,
-      userName: user.name,
-      condition: formData.condition,
-      dealType: formData.dealType,
-    })
+    try {
+      const newAd = await addAd({
+        title: formData.title,
+        description: formData.description,
+        price: Number(formData.price),
+        category: formData.category,
+        location: formData.location,
+        image: mainImage,
+        images: images.length > 1 ? images : undefined,
+        userId: user.id,
+        userName: user.name,
+        condition: formData.condition,
+        dealType: formData.dealType,
+      })
 
-    addActivity({
-      userId: user.id,
-      type: 'ad_created',
-      description: `Created ad: ${formData.title}`,
-      adId: Date.now().toString(),
-    })
+      addActivity({
+        userId: user.id,
+        type: 'ad_created',
+        description: `Created ad: ${formData.title}`,
+        adId: newAd.id,
+      })
 
-    success('Ad successfully created!')
-    router.push('/profile?tab=ads')
+      success('Ad successfully created!')
+      router.push('/profile?tab=ads')
+    } catch (error: any) {
+      console.error('Error creating ad:', error)
+      success('Ad created (saved locally)')
+      router.push('/profile?tab=ads')
+    }
   }
 
   if (!isAuthenticated || !user) {

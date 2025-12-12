@@ -149,7 +149,8 @@ function BaseAdCard({
                   dealType={
                     ad.dealType &&
                     ad.dealType !== 'exchange' &&
-                    ad.dealType !== 'buy'
+                    ad.dealType !== 'buy' &&
+                    ad.dealType !== 'sell'
                       ? ad.dealType
                       : undefined
                   }

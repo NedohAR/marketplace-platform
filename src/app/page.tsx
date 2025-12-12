@@ -23,10 +23,17 @@ export default function Home() {
     getFilteredAndSortedAds,
     getRecentViews,
     loadViewHistoryForUser,
+    loadAds,
   } = useAdStore()
   const mounted = useMounted()
   const { data: session } = useSession()
   const [recentViews, setRecentViews] = useState<Ad[]>([])
+
+  useEffect(() => {
+    if (mounted) {
+      loadAds()
+    }
+  }, [mounted, loadAds])
 
   useEffect(() => {
     if (mounted && session?.user?.id) {
@@ -35,7 +42,7 @@ export default function Home() {
     } else if (mounted) {
       setRecentViews([])
     }
-  }, [mounted, session?.user?.id, getRecentViews, loadViewHistoryForUser])
+  }, [mounted, session?.user?.id, getRecentViews, loadViewHistoryForUser, ads])
 
   const promotedAds = useMemo(() => {
     if (!mounted) return []

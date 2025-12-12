@@ -21,14 +21,22 @@ export default function CategoryPage() {
     resetFilters,
     filters,
     sortBy,
+    loadAds,
+    ads,
   } = useAdStore()
   const mounted = useMounted()
 
+  useEffect(() => {
+    if (mounted) {
+      loadAds()
+    }
+  }, [mounted, loadAds])
+
   const category = categories.find((cat) => cat.slug === slug)
   const categoryAds = useMemo(() => {
-    const ads = getAdsByCategory(slug)
-    return getFilteredAndSortedAds(ads)
-  }, [slug, getAdsByCategory, getFilteredAndSortedAds, filters, sortBy])
+    const categoryAdsList = getAdsByCategory(slug)
+    return getFilteredAndSortedAds(categoryAdsList)
+  }, [slug, getAdsByCategory, getFilteredAndSortedAds, filters, sortBy, ads])
 
   useEffect(() => {
     setFilters({ category: slug })
