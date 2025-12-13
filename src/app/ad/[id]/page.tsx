@@ -26,6 +26,7 @@ import {
 } from 'react-icons/fa'
 import { useState, useEffect } from 'react'
 import { formatPrice, formatDate } from '@/utils/format'
+import MessageModal from '@/components/messages/MessageModal'
 
 export default function AdPage() {
   const params = useParams() as AdPageParams
@@ -43,6 +44,7 @@ export default function AdPage() {
   const { user, isAuthenticated, addActivity } = useAuthStore()
   const { success, error } = useToastStore()
   const { data: session } = useSession()
+  const [isMessageModalOpen, setIsMessageModalOpen] = useState(false)
 
   const handleShare = async () => {
     const url = window.location.href
@@ -136,7 +138,7 @@ export default function AdPage() {
   }
 
   return (
-    <PageLayout>
+    <>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
         <div className="lg:col-span-2">
           <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-4 sm:mb-6 animate-slide-up">
@@ -283,72 +285,49 @@ export default function AdPage() {
                 <div className="min-w-0">
                   <p className="font-semibold text-gray-800 text-sm sm:text-base truncate">
                     {ad.userName}
+                    {isOwner && <span className="text-gray-500 font-normal"> (You)</span>}
                   </p>
                   <p className="text-xs sm:text-sm text-gray-600">
                     On Marketplace since 2023
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => {
-                  if (ad) {
-                    trackContact(ad.id, 'phone')
-                    success('Phone number: +1234567890')
-                  }
-                }}
-                className="w-full py-2.5 sm:py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-semibold flex items-center justify-center gap-2 text-sm sm:text-base"
-              >
-                <FaPhone />
-                <span className="hidden xs:inline">Show Phone</span>
-                <span className="xs:hidden">Phone</span>
-              </button>
-              <button
-                onClick={() => {
-                  if (ad && user) {
-                    trackContact(ad.id, 'message')
-                    const message = {
-                      id:
-                        Date.now().toString() +
-                        Math.random().toString(36).slice(2, 11),
-                      fromUserId: user.id,
-                      fromUserName: user.name,
-                      toUserId: ad.userId,
-                      adId: ad.id,
-                      adTitle: ad.title,
-                      content: `Hello! I'm interested in your ad "${ad.title}". Could you provide more details?`,
-                      date: new Date().toISOString(),
-                      read: false,
-                    }
-                    if (typeof window !== 'undefined') {
-                      try {
-                        const stored = localStorage.getItem(
-                          `messages-${ad.userId}`
-                        )
-                        const messages = stored ? JSON.parse(stored) : []
-                        messages.unshift(message)
-                        localStorage.setItem(
-                          `messages-${ad.userId}`,
-                          JSON.stringify(messages)
-                        )
-                        success('Message sent successfully!')
-                      } catch (e) {
-                        error('Failed to send message')
+              {!isOwner && (
+                <>
+                  <button
+                    onClick={() => {
+                      if (ad) {
+                        trackContact(ad.id, 'phone')
+                        success('Phone number: +1234567890')
                       }
-                    }
-                  } else if (!user) {
-                    router.push('/login')
-                  }
-                }}
-                className="w-full mt-2 py-2.5 sm:py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
-              >
-                <FaEnvelope />
-                <span className="hidden xs:inline">Send Message</span>
-                <span className="xs:hidden">Message</span>
-              </button>
+                    }}
+                    className="w-full py-2.5 sm:py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-semibold flex items-center justify-center gap-2 text-sm sm:text-base"
+                  >
+                    <FaPhone />
+                    <span className="hidden xs:inline">Show Phone</span>
+                    <span className="xs:hidden">Phone</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (ad && user) {
+                        trackContact(ad.id, 'message')
+                        setIsMessageModalOpen(true)
+                      } else if (!user) {
+                        router.push('/login')
+                      }
+                    }}
+                    className="w-full mt-2 py-2.5 sm:py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
+                  >
+                    <FaEnvelope />
+                    <span className="hidden xs:inline">Send Message</span>
+                    <span className="xs:hidden">Message</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
-      </div>
-    </PageLayout>
+      </div> 
+      </>
   )
 }

@@ -62,15 +62,16 @@ function BaseAdCard({
     compact:
       'relative bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-gray-200 hover:border-orange-500 flex flex-col group',
     promoted:
-      'bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-gray-200 hover:border-orange-500',
+      'relative bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-gray-200 hover:border-orange-500 group',
   }
 
   const favoriteButtonClasses = {
     default:
-      'absolute top-4 right-4 z-10 p-2 bg-white rounded-full shadow-md hover:shadow-lg transition-all',
+      'absolute top-4 right-4 z-20 p-2 bg-white rounded-full shadow-md hover:shadow-lg transition-all',
     compact:
-      'absolute top-2 right-2 z-10 p-1.5 bg-white rounded-full shadow-md hover:shadow-lg transition-all opacity-0 group-hover:opacity-100',
-    promoted: 'hidden', // Promoted не показывает избранное
+      'absolute top-2 right-2 z-20 p-1.5 bg-white rounded-full shadow-md hover:shadow-lg transition-all opacity-0 group-hover:opacity-100',
+    promoted:
+      'absolute top-2 right-2 z-20 p-1.5 bg-white rounded-full shadow-md hover:shadow-lg transition-all opacity-0 group-hover:opacity-100',
   }
 
   return (
@@ -108,6 +109,21 @@ function BaseAdCard({
           className="object-cover"
           sizes={imageConfig.sizes}
         />
+        {showFavorite && isPromoted && (
+          <button
+            onClick={toggleFavorite}
+            className={favoriteButtonClasses[variant]}
+            aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}
+            suppressHydrationWarning
+          >
+            <FaHeart
+              className={`text-sm ${
+                favorite ? 'text-red-500 fill-red-500' : 'text-gray-400'
+              }`}
+              suppressHydrationWarning
+            />
+          </button>
+        )}
       </div>
 
       <div

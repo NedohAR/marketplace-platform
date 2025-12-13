@@ -72,6 +72,59 @@ export interface Message {
   read: boolean
 }
 
+export interface ChatMessage {
+  id: string
+  content: string
+  senderId: string
+  senderName: string
+  senderAvatar?: string
+  recipientId?: string
+  conversationId: string
+  adId?: string
+  parentMessageId?: string
+  parentMessage?: {
+    id: string
+    content: string
+    senderId: string
+  }
+  isRead: boolean
+  createdAt: string
+}
+
+export interface ConversationUser {
+  id: string
+  name: string
+  username: string
+  avatar?: string
+}
+
+export interface ConversationAd {
+  id: string
+  title: string
+  price: number
+  images?: Array<{
+    url: string
+    thumbnail?: string
+  }>
+}
+
+export interface Conversation {
+  id: string
+  otherUser: ConversationUser
+  ad?: ConversationAd
+  lastMessage: {
+    id: string
+    content: string
+    senderId: string
+    senderName: string
+    isRead: boolean
+    createdAt: string
+  } | null
+  lastMessageAt: string
+  createdAt: string
+  unreadCount: number
+}
+
 export interface LoginFormData {
   email: string
   password: string

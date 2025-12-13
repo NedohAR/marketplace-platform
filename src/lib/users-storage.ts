@@ -4,7 +4,7 @@ import { prisma } from './prisma'
 export interface StoredUser {
   id: string
   email: string
-  password: string // хешированный
+  password: string
   name: string
   phone?: string | null
   location?: string | null

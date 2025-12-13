@@ -36,7 +36,6 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     try {
-      // Создаем пользователя через API
       const response = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -54,7 +53,6 @@ export default function RegisterPage() {
         return
       }
 
-      // Автоматически логиним пользователя после регистрации
       const result = await signIn('credentials', {
         email: formData.email,
         password: formData.password,

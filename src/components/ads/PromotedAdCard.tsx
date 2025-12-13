@@ -13,7 +13,7 @@ function PromotedAdCard({ ad }: PromotedAdCardProps) {
     <BaseAdCard
       ad={ad}
       variant="promoted"
-      showFavorite={false}
+      showFavorite={true}
       showViews={false}
       showDescription={false}
       showBadges={true}

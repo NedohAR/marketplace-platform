@@ -111,11 +111,9 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Ad not found' }, { status: 404 })
     }
 
-    // Allow view count updates without authentication or ownership check
     const isViewUpdate = Object.keys(updates).length === 1 && 'views' in updates
 
     if (isViewUpdate) {
-      // Anyone can update view count
       const ad = await updateAd(id, updates)
       if (!ad) {
         return NextResponse.json(
@@ -126,7 +124,6 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ ad })
     }
 
-    // For other updates, require authentication and ownership
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

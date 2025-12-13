@@ -55,8 +55,9 @@ interface AdStore {
   setSortBy: (sort: SortOption) => void
   setFilters: (filters: Partial<Filters>) => void
   resetFilters: () => void
-  toggleFavorite: (adId: string) => void
+  toggleFavorite: (adId: string, userId?: string) => void
   isFavorite: (adId: string) => boolean
+  loadFavoritesForUser: (userId: string) => void
   getAdsByCategory: (categorySlug: string) => Ad[]
   getFilteredAndSortedAds: (ads: Ad[]) => Ad[]
   getAdById: (id: string) => Ad | undefined
@@ -244,15 +245,22 @@ const saveAdsToStorage = (ads: Ad[]) => {
   } catch (e) {}
 }
 
-const loadFavoritesFromStorage = (): string[] => {
-  if (typeof window === 'undefined') return []
+const loadFavoritesFromStorage = (userId?: string): string[] => {
+  if (typeof window === 'undefined' || !userId) return []
   try {
-    const stored = localStorage.getItem('favorites-storage')
+    const stored = localStorage.getItem(`favorites-storage-${userId}`)
     if (stored) {
       return JSON.parse(stored)
     }
   } catch (e) {}
   return []
+}
+
+const saveFavoritesToStorage = (favorites: string[], userId?: string) => {
+  if (typeof window === 'undefined' || !userId) return
+  try {
+    localStorage.setItem(`favorites-storage-${userId}`, JSON.stringify(favorites))
+  } catch (e) {}
 }
 
 const loadFiltersFromStorage = (): Filters => {
@@ -370,7 +378,7 @@ export const useAdStore = create<AdStore>((set, get) => ({
   searchQuery: '',
   sortBy: 'newest',
   filters: loadFiltersFromStorage(),
-  favorites: loadFavoritesFromStorage(),
+  favorites: [], // Will be loaded when user is available
   searchHistory: loadSearchHistoryFromStorage(),
   viewHistory: [],
   sellerStats: loadSellerStatsFromStorage(),
@@ -422,16 +430,23 @@ export const useAdStore = create<AdStore>((set, get) => ({
     })
     saveFiltersToStorage(defaultFilters)
   },
-  toggleFavorite: (adId) => {
+  toggleFavorite: (adId, userId) => {
+    if (!userId) {
+      console.warn('Cannot toggle favorite: user not logged in')
+      return
+    }
+
     const newFavorites = get().favorites.includes(adId)
       ? get().favorites.filter((id) => id !== adId)
       : [...get().favorites, adId]
     set({ favorites: newFavorites })
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('favorites-storage', JSON.stringify(newFavorites))
-    }
+    saveFavoritesToStorage(newFavorites, userId)
   },
   isFavorite: (adId) => get().favorites.includes(adId),
+  loadFavoritesForUser: (userId) => {
+    const favorites = loadFavoritesFromStorage(userId)
+    set({ favorites })
+  },
   getAdsByCategory: (categorySlug) => {
     return get().ads.filter(
       (ad) =>

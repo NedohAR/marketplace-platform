@@ -1,19 +1,13 @@
--- CreateEnum
 CREATE TYPE "Role" AS ENUM ('USER', 'ADMIN', 'MODERATOR');
 
--- CreateEnum
 CREATE TYPE "AdStatus" AS ENUM ('ACTIVE', 'SOLD', 'ARCHIVED', 'PENDING_MODERATION', 'REJECTED');
 
--- CreateEnum
 CREATE TYPE "DealType" AS ENUM ('SELL', 'BUY', 'EXCHANGE', 'RENT', 'FREE');
 
--- CreateEnum
 CREATE TYPE "Condition" AS ENUM ('NEW', 'USED', 'FOR_PARTS', 'NEEDS_REPAIR');
 
--- CreateEnum
 CREATE TYPE "ReportStatus" AS ENUM ('PENDING', 'REVIEWED', 'RESOLVED', 'DISMISSED');
 
--- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
@@ -33,7 +27,6 @@ CREATE TABLE "User" (
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
 CREATE TABLE "Ad" (
     "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
@@ -59,7 +52,6 @@ CREATE TABLE "Ad" (
     CONSTRAINT "Ad_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
 CREATE TABLE "Category" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -73,7 +65,6 @@ CREATE TABLE "Category" (
     CONSTRAINT "Category_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
 CREATE TABLE "Image" (
     "id" TEXT NOT NULL,
     "url" TEXT NOT NULL,
@@ -85,7 +76,6 @@ CREATE TABLE "Image" (
     CONSTRAINT "Image_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
 CREATE TABLE "Favorite" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -95,7 +85,6 @@ CREATE TABLE "Favorite" (
     CONSTRAINT "Favorite_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
 CREATE TABLE "Message" (
     "id" TEXT NOT NULL,
     "content" TEXT NOT NULL,
@@ -107,7 +96,6 @@ CREATE TABLE "Message" (
     CONSTRAINT "Message_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
 CREATE TABLE "Review" (
     "id" TEXT NOT NULL,
     "rating" INTEGER NOT NULL,
@@ -120,7 +108,6 @@ CREATE TABLE "Review" (
     CONSTRAINT "Review_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
 CREATE TABLE "ViewHistory" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -130,7 +117,6 @@ CREATE TABLE "ViewHistory" (
     CONSTRAINT "ViewHistory_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
 CREATE TABLE "Report" (
     "id" TEXT NOT NULL,
     "reason" TEXT NOT NULL,
@@ -144,7 +130,6 @@ CREATE TABLE "Report" (
     CONSTRAINT "Report_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
 CREATE TABLE "RateLimit" (
     "id" TEXT NOT NULL,
     "key" TEXT NOT NULL,
@@ -154,40 +139,28 @@ CREATE TABLE "RateLimit" (
     CONSTRAINT "RateLimit_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
--- CreateIndex
 CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
 
--- CreateIndex
 CREATE INDEX "User_email_idx" ON "User"("email");
 
--- CreateIndex
 CREATE INDEX "User_username_idx" ON "User"("username");
 
--- CreateIndex
 CREATE INDEX "Ad_userId_idx" ON "Ad"("userId");
 
--- CreateIndex
 CREATE INDEX "Ad_categoryId_idx" ON "Ad"("categoryId");
 
--- CreateIndex
 CREATE INDEX "Ad_status_idx" ON "Ad"("status");
 
--- CreateIndex
 CREATE INDEX "Ad_createdAt_idx" ON "Ad"("createdAt");
 
--- CreateIndex
 CREATE INDEX "Ad_price_idx" ON "Ad"("price");
 
--- CreateIndex
 CREATE INDEX "Ad_title_idx" ON "Ad"("title");
 
--- CreateIndex
 CREATE UNIQUE INDEX "Category_name_key" ON "Category"("name");
 
--- CreateIndex
 CREATE UNIQUE INDEX "Category_slug_key" ON "Category"("slug");
 
 -- CreateIndex

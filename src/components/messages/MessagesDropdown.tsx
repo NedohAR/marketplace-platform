@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Message } from '@/types'
+import { Conversation } from '@/types'
 import { useAuthStore } from '@/store/useAuthStore'
-import { FaEnvelope, FaEnvelopeOpen, FaTrash, FaAd } from 'react-icons/fa'
+import { FaEnvelope, FaEnvelopeOpen, FaAd } from 'react-icons/fa'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 interface MessagesDropdownProps {
   isOpen: boolean
@@ -18,21 +19,19 @@ export default function MessagesDropdown({
   onUpdateCount,
 }: MessagesDropdownProps) {
   const { user } = useAuthStore()
-  const [messages, setMessages] = useState<Message[]>([])
+  const router = useRouter()
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [loading, setLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setMounted(true)
-    if (user) {
-      loadMessages()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+  }, [])
 
   useEffect(() => {
     if (isOpen && user) {
-      loadMessages()
+      loadConversations()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, user])
@@ -56,52 +55,30 @@ export default function MessagesDropdown({
     }
   }, [isOpen, onClose])
 
-  const loadMessages = () => {
-    if (!user || typeof window === 'undefined') return
+  const loadConversations = async () => {
+    if (!user) return
     try {
-      const stored = localStorage.getItem(`messages-${user.id}`)
-      if (stored) {
-        const parsed = JSON.parse(stored)
-        setMessages(parsed)
-      } else {
-        setMessages([])
+      setLoading(true)
+      const response = await fetch('/api/conversations')
+      if (response.ok) {
+        const data = await response.json()
+        setConversations(data.conversations || [])
+        if (onUpdateCount) {
+          onUpdateCount()
+        }
       }
     } catch (e) {
-      setMessages([])
+      console.error('Failed to load conversations:', e)
+      setConversations([])
+    } finally {
+      setLoading(false)
     }
   }
 
-  const markAsRead = (messageId: string) => {
-    if (!user || typeof window === 'undefined') return
-    const updated = messages.map((msg) =>
-      msg.id === messageId ? { ...msg, read: true } : msg
-    )
-    setMessages(updated)
-    try {
-      localStorage.setItem(`messages-${user.id}`, JSON.stringify(updated))
-      if (onUpdateCount) {
-        onUpdateCount()
-      }
-    } catch (e) {
-      console.error('Failed to save message:', e)
-    }
-  }
-
-  const deleteMessage = (messageId: string) => {
-    if (!user || typeof window === 'undefined') return
-    const updated = messages.filter((msg) => msg.id !== messageId)
-    setMessages(updated)
-    try {
-      localStorage.setItem(`messages-${user.id}`, JSON.stringify(updated))
-      if (onUpdateCount) {
-        onUpdateCount()
-      }
-    } catch (e) {
-      console.error('Failed to delete message:', e)
-    }
-  }
-
-  const unreadCount = messages.filter((msg) => !msg.read).length
+  const unreadCount = conversations.reduce(
+    (sum, conv) => sum + (conv.unreadCount || 0),
+    0
+  )
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -129,20 +106,31 @@ export default function MessagesDropdown({
       className="absolute right-0 top-full mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-[60] max-h-[80vh] overflow-hidden flex flex-col"
     >
       <div className="p-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-800">Messages</h3>
-        {unreadCount > 0 && (
-          <p className="text-sm text-gray-500 mt-1">
-            {unreadCount} unread message{unreadCount !== 1 ? 's' : ''}
-          </p>
-        )}
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800">Messages</h3>
+            {unreadCount > 0 && (
+              <p className="text-sm text-gray-500 mt-1">
+                {unreadCount} unread message{unreadCount !== 1 ? 's' : ''}
+              </p>
+            )}
+          </div>
+          <Link
+            href="/messages"
+            onClick={onClose}
+            className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+          >
+            View all
+          </Link>
+        </div>
       </div>
 
       <div className="overflow-y-auto flex-1">
-        {!mounted ? (
+        {!mounted || loading ? (
           <div className="text-center py-8">
             <p className="text-gray-500">Loading...</p>
           </div>
-        ) : messages.length === 0 ? (
+        ) : conversations.length === 0 ? (
           <div className="text-center py-12 px-4">
             <FaEnvelope className="text-4xl text-gray-300 mx-auto mb-3" />
             <p className="text-gray-600">No messages yet</p>
@@ -152,76 +140,75 @@ export default function MessagesDropdown({
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`p-4 transition-colors ${
-                  message.read ? 'bg-white' : 'bg-orange-50'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      {message.read ? (
-                        <FaEnvelopeOpen className="text-gray-400 text-sm flex-shrink-0" />
-                      ) : (
-                        <FaEnvelope className="text-orange-500 text-sm flex-shrink-0" />
-                      )}
-                      <span
-                        className={`font-semibold truncate ${
-                          message.read ? 'text-gray-700' : 'text-gray-900'
-                        }`}
-                      >
-                        {message.fromUserName}
-                      </span>
-                      <span className="text-xs text-gray-500 flex-shrink-0">
-                        {formatDate(message.date)}
-                      </span>
-                    </div>
+            {conversations
+              .filter((conv) => conv.lastMessage)
+              .slice(0, 5)
+              .map((conversation) => {
+                const hasUnread = conversation.unreadCount > 0
+                const lastMessage = conversation.lastMessage!
+                const isFromMe = lastMessage.senderId === user?.id
 
-                    {message.adTitle && (
-                      <div className="mb-2">
-                        <Link
-                          href={message.adId ? `/ad/${message.adId}` : '#'}
-                          onClick={onClose}
-                          className="inline-flex items-center gap-1 text-sm text-orange-600 hover:text-orange-700 truncate"
+                return (
+                  <button
+                    key={conversation.id}
+                    onClick={() => {
+                      onClose()
+                      router.push(`/messages?conversation=${conversation.id}`)
+                    }}
+                    className={`w-full p-4 text-left transition-colors hover:bg-gray-50 ${
+                      hasUnread ? 'bg-orange-50' : 'bg-white'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          {hasUnread ? (
+                            <FaEnvelope className="text-orange-500 text-sm flex-shrink-0" />
+                          ) : (
+                            <FaEnvelopeOpen className="text-gray-400 text-sm flex-shrink-0" />
+                          )}
+                          <span
+                            className={`font-semibold truncate ${
+                              hasUnread ? 'text-gray-900' : 'text-gray-700'
+                            }`}
+                          >
+                            {conversation.otherUser.name}
+                          </span>
+                          <span className="text-xs text-gray-500 flex-shrink-0">
+                            {formatDate(lastMessage.createdAt)}
+                          </span>
+                        </div>
+
+                        {conversation.ad && (
+                          <div className="mb-2">
+                            <div className="inline-flex items-center gap-1 text-sm text-orange-600 truncate">
+                              <FaAd className="text-xs flex-shrink-0" />
+                              <span className="truncate">{conversation.ad.title}</span>
+                            </div>
+                          </div>
+                        )}
+
+                        <p
+                          className={`text-sm line-clamp-2 ${
+                            hasUnread ? 'text-gray-800 font-medium' : 'text-gray-600'
+                          }`}
                         >
-                          <FaAd className="text-xs flex-shrink-0" />
-                          <span className="truncate">{message.adTitle}</span>
-                        </Link>
+                          {isFromMe && <span className="text-gray-500">You: </span>}
+                          {lastMessage.content}
+                        </p>
+
+                        {hasUnread && (
+                          <div className="mt-2">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                              {conversation.unreadCount} new
+                            </span>
+                          </div>
+                        )}
                       </div>
-                    )}
-
-                    <p
-                      className={`text-sm line-clamp-2 ${
-                        message.read ? 'text-gray-600' : 'text-gray-800'
-                      }`}
-                    >
-                      {message.content}
-                    </p>
-                  </div>
-
-                  <div className="flex items-start gap-1 flex-shrink-0">
-                    {!message.read && (
-                      <button
-                        onClick={() => markAsRead(message.id)}
-                        className="p-1.5 text-orange-600 hover:bg-orange-100 rounded transition-colors"
-                        title="Mark as read"
-                      >
-                        <FaEnvelopeOpen className="text-xs" />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => deleteMessage(message.id)}
-                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                      title="Delete message"
-                    >
-                      <FaTrash className="text-xs" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+                    </div>
+                  </button>
+                )
+              })}
           </div>
         )}
       </div>

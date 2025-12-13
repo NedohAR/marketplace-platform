@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAdStore } from '@/store/useAdStore'
-import { useSession, signOut } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import { useState, useEffect } from 'react'
 import { FaSearch, FaPlus, FaUser, FaHeart, FaEnvelope } from 'react-icons/fa'
 import SearchAutocomplete from '../filters/SearchAutocomplete'
@@ -21,31 +21,72 @@ export default function Header() {
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0)
 
   useEffect(() => {
+    if (user && isAuthenticated) {
+      fetch('/api/conversations')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.conversations) {
+            const totalUnread = data.conversations.reduce(
+              (sum: number, conv: any) => sum + (conv.unreadCount || 0),
+              0
+            )
+            setUnreadMessagesCount(totalUnread)
+          }
+        })
+        .catch((err) => {
+          console.error('Error loading unread count:', err)
+        })
+    } else {
+      setUnreadMessagesCount(0)
+    }
+  }, [user, isAuthenticated])
+
+  useEffect(() => {
     setMounted(true)
   }, [])
 
   useEffect(() => {
-    if (mounted && user && typeof window !== 'undefined') {
-      const loadUnreadCount = () => {
+    if (mounted && user && isAuthenticated) {
+      const loadUnreadCount = async () => {
+        if (document.hidden) return
+        
         try {
-          const stored = localStorage.getItem(`messages-${user.id}`)
-          if (stored) {
-            const messages = JSON.parse(stored)
-            const unread = messages.filter((msg: any) => !msg.read).length
-            setUnreadMessagesCount(unread)
-          } else {
-            setUnreadMessagesCount(0)
+          const response = await fetch('/api/conversations')
+          if (response.ok) {
+            const data = await response.json()
+            if (data.conversations) {
+              const totalUnread = data.conversations.reduce(
+                (sum: number, conv: any) => sum + (conv.unreadCount || 0),
+                0
+              )
+              setUnreadMessagesCount(totalUnread)
+            }
           }
         } catch (e) {
+          console.error('Error loading unread count:', e)
           setUnreadMessagesCount(0)
         }
       }
 
+      const handleVisibilityChange = () => {
+        if (!document.hidden) {
+          loadUnreadCount()
+        }
+      }
+
       loadUnreadCount()
-      const interval = setInterval(loadUnreadCount, 10000)
-      return () => clearInterval(interval)
+      const interval = setInterval(loadUnreadCount, 10000) 
+      
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+
+      return () => {
+        clearInterval(interval)
+        document.removeEventListener('visibilitychange', handleVisibilityChange)
+      }
+    } else {
+      setUnreadMessagesCount(0)
     }
-  }, [mounted, user])
+  }, [mounted, user, isAuthenticated])
 
   useEffect(() => {
     setLocalSearch(searchQuery)

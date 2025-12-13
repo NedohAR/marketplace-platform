@@ -92,9 +92,15 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       }
       set({ user, isAuthenticated: true })
       saveToStorage({ ...get(), user, isAuthenticated: true })
+      
     } else {
       set({ user: null, isAuthenticated: false })
       saveToStorage({ ...get(), user: null, isAuthenticated: false })
+      
+      if (typeof window !== 'undefined') {
+        const { useAdStore } = require('@/store/useAdStore')
+        useAdStore.getState().loadFavoritesForUser('')
+      }
     }
   },
 
@@ -120,6 +126,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           const state = { user, isAuthenticated: true }
           set(state)
           saveToStorage({ ...get(), ...state })
+          
           get().addActivity({
             userId: user.id,
             type: 'ad_created',

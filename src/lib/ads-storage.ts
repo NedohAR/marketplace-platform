@@ -1,5 +1,6 @@
 import { prisma } from './prisma'
 import { Ad, AdCondition, DealType } from '@/types'
+import { Condition, DealType as PrismaDealType } from '@prisma/client'
 
 export interface StoredAd {
   id: string
@@ -210,9 +211,11 @@ export async function createAd(adData: {
         location: adData.location,
         userId: adData.userId,
         condition: adData.condition
-          ? adData.condition.toUpperCase().replace(/-/g, '_')
+          ? (adData.condition.toUpperCase().replace(/-/g, '_') as Condition)
           : null,
-        dealType: adData.dealType ? adData.dealType.toUpperCase() : null,
+        dealType: adData.dealType
+          ? (adData.dealType.toUpperCase() as PrismaDealType)
+          : null,
         promoted: adData.promoted || false,
         status: 'ACTIVE',
         images: {

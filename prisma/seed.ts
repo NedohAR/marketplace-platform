@@ -22,7 +22,6 @@ if (!connectionString) {
       connectionString = match[1].trim().replace(/^["']|["']$/g, '')
     }
   } catch (e) {
-    // ignore
   }
 }
 
@@ -130,19 +129,15 @@ const promotedAds = [
   },
 ]
 
-// Helper function to get or create user by name
 async function getOrCreateUser(name: string) {
-  // Try to find user by name first
   let user = await prisma.user.findFirst({
     where: { name },
   })
 
   if (!user) {
-    // Generate unique email and username based on name
     const baseEmail = `${name.toLowerCase().replace(/\s+/g, '.')}@example.com`
     const baseUsername = name.toLowerCase().replace(/\s+/g, '_')
 
-    // Check if email exists, if so, add random suffix
     let email = baseEmail
     let username = baseUsername
     let counter = 1
@@ -157,7 +152,6 @@ async function getOrCreateUser(name: string) {
       counter++
     }
 
-    // Create user with hashed password
     const hashedPassword = await bcrypt.hash('password123', 10)
 
     user = await prisma.user.create({
@@ -190,7 +184,6 @@ async function main() {
   }
 
   for (const adData of promotedAds) {
-    // Get or create user for this ad
     const user = await getOrCreateUser(adData.userName)
 
     let category = await prisma.category.findUnique({
@@ -215,7 +208,6 @@ async function main() {
       continue
     }
 
-    // Check if ad with same title exists for this user
     const existingAd = await prisma.ad.findFirst({
       where: {
         title: adData.title,
